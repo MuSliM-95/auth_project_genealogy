@@ -33,22 +33,23 @@ export class ConfirmationController extends BaseController implements IConfirmat
 	}
 
 	public async newVerification(
-		{ session, body }: Request<{}, {}, ConfirmationDto>,
+		{ session, body, t }: Request<{}, {}, ConfirmationDto>,
 		res: Response,
 		next: NextFunction,
 	) {
-		const result = await this.confirmationService.newVerification(session, body);
+		const result = await this.confirmationService.newVerification(session, body, t);
 		res.status(200).json(result);
 	}
 
 	public async newEmailVerification(
-		{ session, body }: Request<{}, {}, ConfirmationDto>,
+		{ session, body, t }: Request<{}, {}, ConfirmationDto>,
 		res: Response,
 		next: NextFunction,
 	) {
 		await this.confirmationService.verificationNewEmail(
 			session.userId!,
 			body.token!.toString(),
+			t
 		);
 		res.sendStatus(204);
 	}

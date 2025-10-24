@@ -18,6 +18,7 @@ import { Token, TokenTypes } from '../token/model/token.model';
 import { MailService } from '../common/mail/mail.service';
 import { NewPasswordDto } from './dto/new.password.dto';
 import { compare, hash } from 'bcryptjs';
+import { TFunction } from 'i18next';
 
 @injectable()
 export class AuthService implements IAuthService {
@@ -30,13 +31,13 @@ export class AuthService implements IAuthService {
 		@inject(TYPES.ConfirmationService) private confirmationService: IConfirmationService,
 	) {}
 
-	public async register({ name, email, password }: RegisterDto): Promise<{ message: string }> {
+	public async register({ name, email, password }: RegisterDto, t: TFunction): Promise<{ message: string }> {
 		const isExists = await this.userService.getUserEmail(email);
 
 		if (isExists) {
 			throw new HTTPError(
 				422,
-				'Регистрация не удалась. Пользователь с таким email уже существует. Пожалуйста, используйте другой email или войдите в систему.',
+				t('registrationFailedEmailExists'),
 			);
 		}
 
@@ -46,22 +47,23 @@ export class AuthService implements IAuthService {
 
 		const user = await this.userService.createUser(userData);
 
-		await this.confirmationService.sendVerificationToken(user.email, 'auth/new-verification');
+		await this.confirmationService.sendVerificationToken(user.email, 'auth/new-verification', t);
 
 		return {
 			message:
-				'Вы успешно зарегистрировались. Пожалуйста, подтвердите ваш email. Сообщение было отправлено на ваш почтовы адрес.',
+				t('registrationSuccess'),
 		};
 	}
 
 	public async login(
 		dto: LoginDto,
 		session: Request['session'],
+		t: TFunction,
 	): Promise<{ user: UserType } | { message: string }> {
 		const user = await this.userService.getUserEmail(dto.email);
 
 		if (!user || !user.password) {
-			throw new HTTPError(404, 'Пользователь не найден. Пожалуйста, проверьте введенные данные.');
+			throw new HTTPError(404, t('userNotFound'));
 		}
 
 		const userData = new AuthData(
@@ -76,30 +78,24 @@ export class AuthService implements IAuthService {
 		const isValidatePassword = await userData.comparePassword(dto.password);
 
 		if (!isValidatePassword) {
-			throw new HTTPError(
-				401,
-				'Неверный пароль. Пожалуйста, попробуйте еще раз или восстановите пароль, если забыли его.',
-			);
+			throw new HTTPError(401, t('invalidPassword'));
 		}
 
 		if (!user.isVerified) {
-			await this.confirmationService.sendVerificationToken(user.email, 'auth/new-verification');
-			throw new HTTPError(
-				401,
-				'Ваш email не подтвержден. Пожалуйста, проверьте вашу почту и подтвердите адрес.',
-			);
+			await this.confirmationService.sendVerificationToken(user.email, 'auth/new-verification', t);
+			throw new HTTPError(401, t('emailNotVerified'));
 		}
 
 		if (user.isTwoFactorEnabled) {
 			if (!dto.code) {
-				await this.sendTwoFactorToken(user.email);
+				await this.sendTwoFactorToken(user.email, t);
 
 				return {
-					message: 'Проверьте вашу почту. Требуется код двухфакторной аутентификации.',
+					message: t('twoFactorRequired'),
 				};
 			}
 
-			await this.validateTwoFactorToken(user.email, dto.code);
+			await this.validateTwoFactorToken(user.email, dto.code, t);
 		}
 
 		const { password, ...rest } = user;
@@ -107,19 +103,19 @@ export class AuthService implements IAuthService {
 		return this.sessionService.saveSession(session, rest);
 	}
 
-	public async resetPassword(dto: ResetPasswordDto): Promise<boolean> {
+	public async resetPassword(dto: ResetPasswordDto, t: TFunction): Promise<boolean> {
 		const existingUser = await this.userService.getUserEmail(dto.email);
 
 		if (!existingUser) {
 			throw new HTTPError(
 				404,
-				'Пользователь не найден. Пожалуйста, проверьте введенный адрес электронной почты и попробуйте снова.',
+				t('userNotFound'),
 			);
 		}
 
 		const passwordResetToken = await this.generatePasswordResetToken(dto.email);
 
-		await this.mailService.sendPasswordResetEmail(dto.email, passwordResetToken.token);
+		await this.mailService.sendPasswordResetEmail(dto.email, passwordResetToken.token, t);
 
 		return true;
 	}
@@ -144,13 +140,13 @@ export class AuthService implements IAuthService {
 		return passwordResetToken;
 	}
 
-	public async newPassword({ password }: NewPasswordDto, token: string): Promise<boolean> {
+	public async newPassword({ password }: NewPasswordDto, token: string, t: TFunction): Promise<boolean> {
 		const existingToken = await this.tokenService.findTokenUnique(token, TokenTypes.password_reset);
 
 		if (!existingToken) {
 			throw new HTTPError(
 				404,
-				'Токен не найден. Пожалуйста, проверьте правильность введенного токена или запросите новый.',
+				t('tokenNotFound'),
 			);
 		}
 
@@ -159,7 +155,7 @@ export class AuthService implements IAuthService {
 		if (hasExpired) {
 			throw new HTTPError(
 				400,
-				'Время токена истек. Пожалуйста, запросите новый токен для подтверждения сброса пароля.',
+				t('tokenExpired'),
 			);
 		}
 
@@ -168,7 +164,7 @@ export class AuthService implements IAuthService {
 		if (!existingUser) {
 			throw new HTTPError(
 				404,
-				'Пользователь не найден. Пожалуйста, проверьте введенный адрес электронной почты и попробуйте снова.',
+				t('userNotFound'),
 			);
 		}
 
@@ -202,20 +198,20 @@ export class AuthService implements IAuthService {
 		return twoFactorToken;
 	}
 
-	public async validateTwoFactorToken(email: string, code: string) {
+	private async validateTwoFactorToken(email: string, code: string, t: TFunction) {
 		const existingToken = await this.tokenService.findToken(email, TokenTypes.two_factor);
 
 		if (!existingToken) {
 			throw new HTTPError(
 				404,
-				'Токен двухфакторного аутентификации не найден. Убедитесь, что вы запрашивали токен для данного адреса электронной почты. ',
+				t('twoFactorTokenNotFound'),
 			);
 		}
 
 		if (existingToken.token !== code) {
 			throw new HTTPError(
 				400,
-				'Неверный код двухфакторной аутентификации. Пожалуйста, проверьте веденный код и попробуйте снова.',
+				t('invalidTwoFactorCode'),
 			);
 		}
 
@@ -224,7 +220,7 @@ export class AuthService implements IAuthService {
 		if (hasExpired) {
 			throw new HTTPError(
 				400,
-				'Срок действия токена двухфакторной аутентификации истек. Пожалуйста, запросите новый токен.',
+				t('twoFactorTokenExpired'),
 			);
 		}
 
@@ -233,66 +229,68 @@ export class AuthService implements IAuthService {
 		return true;
 	}
 
-	public async sendTwoFactorToken(email: string) {
+	public async sendTwoFactorToken(email: string, t: TFunction) {
 		const twoFactorToken = await this.generateTwoFactorToken(email);
-		await this.mailService.sendTwoFactorTokenEmail(twoFactorToken.email, twoFactorToken.token);
+		await this.mailService.sendTwoFactorTokenEmail(twoFactorToken.email, twoFactorToken.token, t);
 		return true;
 	}
 
 	public async emailUpdate(
 		email: string,
 		user: User,
+		t: TFunction,
 		code?: string,
 	): Promise<{ message: string } | { messageTwo: string }> {
 		const existsEmail = await this.userService.getUserEmail(email);
 
 		if (user.isTwoFactorEnabled) {
 			if (!code) {
-				await this.sendTwoFactorToken(user.email);
+				await this.sendTwoFactorToken(user.email, t);
 				return {
-					messageTwo: 'Проверьте вашу почту. Требуется код двухфакторной аутентификации.',
+					messageTwo: t('twoFactorRequired'),
 				};
 			}
 
-			await this.validateTwoFactorToken(user.email, code);
+			await this.validateTwoFactorToken(user.email, code, t);
 		}
 
 		if (existsEmail) {
-			throw new HTTPError(409, 'Email уже занят.');
+			throw new HTTPError(409, t('emailAlreadyInUse'));
 		}
 
 		if (user?.method !== AuthMethod.credentials) {
-			throw new HTTPError(403, 'Недопустимое действие!', 'emailUpdate');
+			throw new HTTPError(403, t('invalidAction'), 'emailUpdate');
 		}
 
-		await this.confirmationService.sendVerificationToken(email, 'auth/new-email');
+		await this.confirmationService.sendVerificationToken(email, 'auth/new-email', t);
 
-		return { message: 'Проверьте почту для подтверждения.' };
+		return { message: t('checkEmailForConfirmation') };
 	}
 
 	public async passwordUpdate(
 		oldPassword: string,
 		newPassword: string,
+		t: TFunction,
 		userId: number,
 		code?: string,
 	) {
-		const user = await this.userService.getUserByEmailWithPassword(userId);
+		const user = await this.userService.getUserByEmailWithPassword(userId, t);
 
 		const isMatch = await compare(oldPassword, user?.password!);
 
 		if (!isMatch) {
-			throw new HTTPError(400, 'Неправильный пароль.');
+			throw new HTTPError(400, t('incorrectPassword'));
 		}
 
 		if (user.isTwoFactorEnabled) {
 			if (!code) {
-				await this.sendTwoFactorToken(user.email);
+				await this.sendTwoFactorToken(user.email, t);
 				return {
-					messageTwo: 'Проверьте вашу почту. Требуется код двухфакторной аутентификации.',
+					messageTwo: t('twoFactorRequired'),
 				};
 			}
 
-			await this.validateTwoFactorToken(user.email, code)
+			await this.validateTwoFactorToken(user.email, code, t);
 		}
 
 		const passwordHash = await hash(newPassword, 10);
@@ -300,13 +298,13 @@ export class AuthService implements IAuthService {
 		const updated = await this.userService.userPasswordUpdate(userId, passwordHash);
 
 		if (!updated) {
-			throw new HTTPError(500, 'Не удалось обновить пароль.');
+			throw new HTTPError(500, t('passwordUpdateFailed'));
 		}
 
-		await this.mailService.sendPasswordUpdateEmail(user.email);
+		await this.mailService.sendPasswordUpdateEmail(user.email, t);
 
 		return {
-			message: 'Пароль был изменен.'
-		}
+			message: t('passwordChanged'),
+		};
 	}
 }

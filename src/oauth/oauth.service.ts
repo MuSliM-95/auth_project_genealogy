@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ITokenService } from '../token/interfaces/token.service.interface';
 import { RedisConfig } from '../configs/redis.config';
 import { UserType } from '../auth/interfaces/auth.service.interface';
+import { TFunction } from 'i18next';
 
 @injectable()
 export class OAuthService implements IOAuthService {
@@ -28,14 +29,15 @@ export class OAuthService implements IOAuthService {
 		session: Request['session'],
 		provider: string,
 		code: string,
+		t : TFunction
 	): Promise<{ user: UserType }> {
 		const providerInstance = this.providerService.findByService(provider);
 
-		const profile = await providerInstance?.findUserByCode(code)!;
+		const profile = await providerInstance?.findUserByCode(code, t)!;
 
 		const account = await this.oauthRepository.findAccountById(profile?.id, profile?.provider);
 
-		let user = account?.userId ? await this.userService.getUserById(account.userId) : null;
+		let user = account?.userId ? await this.userService.getUserById(account.userId, t) : null;
 
 		if (user) {
 			return this.sessionService.saveSession(session, user);

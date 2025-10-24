@@ -11,6 +11,7 @@ import { ISessionService } from '../common/session.service.interface';
 import { MailService } from '../common/mail/mail.service';
 import { ITokenService } from '../token/interfaces/token.service.interface';
 import { UserType } from '../auth/interfaces/auth.service.interface';
+import { TFunction } from 'i18next';
 
 @injectable()
 export class ConfirmationService implements IConfirmationService {
@@ -21,23 +22,23 @@ export class ConfirmationService implements IConfirmationService {
 		@inject(TYPES.MailService) private mailService: MailService,
 		) {}
 
-	public async newVerification(session: Request['session'], dto: ConfirmationDto): Promise<{ user: UserType }> {
+	public async newVerification(session: Request['session'], dto: ConfirmationDto, t: TFunction): Promise<{ user: UserType }> {
 		const existingToken = await this.tokenService.findTokenUnique(dto.token, TokenTypes.verification);
 	
 		if(!existingToken) {
-			throw new HTTPError(404, 'Токен авторизации не найден. Пожалуйста, убедитесь, что у вас правильный токен.')
+			throw new HTTPError(404, t('authTokenNotFound'))
 		}
 
 		const hasExpired = new Date(existingToken.expiresIn) < new Date()
 		
 		if(hasExpired) {
-          throw new HTTPError(400, 'Токен подтверждения истек. Пожалуйста, запросите новый токен для подтверждения.')
+          throw new HTTPError(400, t('confirmationTokenExpired'))
 		}
 
 		const existingUser = await this.userService.getUserEmail(existingToken.email)
 
 		if(!existingUser) {
-			throw new HTTPError(404, 'Пользователь не найден. Пожалуйста, проверьте введенный адрес электронной почты и попробуйте снова.')
+			throw new HTTPError(404, t('userNotFoundRetry'))
 		}
 
 		await this.userService.userUpdateIsVerified(existingUser.id, true)
@@ -48,17 +49,17 @@ export class ConfirmationService implements IConfirmationService {
 		return this.sessionService.saveSession(session, rest)
 	}
 
-	public async verificationNewEmail(userId: number, token: string): Promise<boolean> {
+	public async verificationNewEmail(userId: number, token: string, t: TFunction): Promise<boolean> {
 		const existingToken = await this.tokenService.findTokenUnique(token, TokenTypes.verification)
 
 		if(!existingToken) {
-			throw new HTTPError(404, 'Токен авторизации не найден. Пожалуйста, убедитесь, что у вас правильный токен.')
+			throw new HTTPError(404, t('authTokenNotFound'))
 		}
 
 		const hasExpired = new Date(existingToken.expiresIn) < new Date()
 
 		if(hasExpired) {
-			throw new HTTPError(400, 'Токен подтверждения истек. Пожалуйста, запросите новый токен для подтверждения.')
+			throw new HTTPError(400, t('confirmationTokenExpired'))
 		}
         
 		await this.userService.emailUpdate(existingToken.email, userId)
@@ -69,10 +70,10 @@ export class ConfirmationService implements IConfirmationService {
 
 	}
 
-	public async sendVerificationToken(email: string, pathUrl: string): Promise<boolean> {
+	public async sendVerificationToken(email: string, pathUrl: string, t: TFunction): Promise<boolean> {
 		const verificationToken = await this.generateVerificationToken(email)
  		
-		await this.mailService.sendConfirmationEmail(verificationToken.email, verificationToken.token, pathUrl)
+		await this.mailService.sendConfirmationEmail(verificationToken.email, verificationToken.token, pathUrl, t)
 
 		return true
 	}

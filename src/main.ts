@@ -23,6 +23,7 @@ import { MailConfig } from './configs/mail.config';
 import { confirmationBindings } from './confirmation/confirmation.main';
 import { MailService } from './common/mail/mail.service';
 import { tokenBindings } from './token/token.main';
+import { I18nConfig } from './configs/i18n.config';
 
 export interface IBootstrapReturn {
 	app: App;
@@ -36,6 +37,7 @@ const appBindings = new ContainerModule((options: ContainerModuleLoadOptions) =>
 	options.bind<IDotenvConfig>(TYPES.DotenvConfig).to(DotenvConfig).inSingletonScope();
 	options.bind<ISessionService>(TYPES.SessionService).to(SessionService).inSingletonScope();
 	options.bind<RedisConfig>(TYPES.RedisConfig).to(RedisConfig).inSingletonScope();
+	options.bind<I18nConfig>(TYPES.I18nConfig).to(I18nConfig).inSingletonScope();
 	options.bind<RecaptchaConfig>(TYPES.RecaptchaConfig).to(RecaptchaConfig).inSingletonScope()
 	options.bind<CorsConfig>(TYPES.CorsConfig).to(CorsConfig);
 	options.bind<MailConfig>(TYPES.MailConfig).to(MailConfig).inSingletonScope();

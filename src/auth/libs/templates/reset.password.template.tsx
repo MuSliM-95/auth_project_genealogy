@@ -2,30 +2,28 @@ import { Body } from '@react-email/body';
 import { Heading } from '@react-email/heading';
 import { Link } from '@react-email/link';
 import { Text } from '@react-email/text';
-import { Tailwind } from "@react-email/tailwind"
+import { Tailwind } from '@react-email/tailwind';
 import { Html } from '@react-email/html';
 import * as React from 'react';
+import { TFunction } from 'i18next';
 
 interface ResetPasswordTemplateProps {
 	domain: string;
 	token: string;
+	t: TFunction;
 }
 
-export function ResetPasswordTemplate({ domain, token }: ResetPasswordTemplateProps) {
+export function ResetPasswordTemplate({ domain, token, t }: ResetPasswordTemplateProps) {
 	const resetLink = `${domain}/auth/new-password?token=${token}`;
 
 	return (
 		<Tailwind>
 			<Html>
-				<Body className='text-black'>
-					<Heading>Сброс пароля</Heading>
-					<Text>
-						Привет! Вы запросили сброс пароля. Пожалуйста, перейдите по следующей ссылке, чтобы создать новый пароль:
-					</Text>
-					<Link href={resetLink}>Подтвердить сброс пароля</Link>
-					<Text>
-						Эта ссылка действительна в течение 1 часа. Если вы не запрашивали сброс пароля, просто проигнорируйте это сообщение.
-					</Text>
+				<Body className="text-black">
+					<Heading>{t('passwordResetHTML')}</Heading>
+					<Text>{t('passwordResetInstructionsHTML')}</Text>
+					<Link href={resetLink}>{t('confirmPasswordResetHTML')}</Link>
+					<Text>{t('linkValidityNoticeHTML')}</Text>
 				</Body>
 			</Html>
 		</Tailwind>

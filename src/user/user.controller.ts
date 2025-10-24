@@ -43,24 +43,24 @@ export class UserController extends BaseController implements IUserController {
 		]);
 	}
 
-	public async getUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
-		const { id } = req.params;
-		const user = await this.userService.getUserById(Number(id));
+	public async getUserById({params, t}: Request, res: Response, next: NextFunction): Promise<void> {
+		const { id } = params;
+		const user = await this.userService.getUserById(Number(id), t);
 
 		res.status(200).json(user);
 	}
 
-	public async getMyProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
-		const userId = req.user?.id;
+	public async getMyProfile({ user, t }: Request, res: Response, next: NextFunction): Promise<void> {
+		const userId = user?.id;
 
-		const user = await this.userService.getUserById(userId!);
-		res.status(200).json(user);
+		const userData = await this.userService.getUserById(userId!, t);
+		res.status(200).json(userData);
 	}
 
-	public async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
-		const userId = req.user?.id;
+	public async updateProfile({user, body, t}: Request, res: Response, next: NextFunction): Promise<void> {
+		const userId = user?.id;
 
-		const user = await this.userService.updateProfile(userId!, req.body);
-		res.status(200).json(user);
+		const userData = await this.userService.updateProfile(userId!, body, t);
+		res.status(200).json(userData);
 	}
 }

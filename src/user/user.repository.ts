@@ -6,6 +6,7 @@ import { User } from './model/user.model';
 import { AuthData } from '../auth/auth.entity';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { HTTPError } from '../errors/http.error.class';
+import { TFunction } from 'i18next';
 
 
 @injectable()
@@ -73,11 +74,11 @@ export class UserRepository implements IUserRepository {
 		return affectedCount;
 	}
 
-	public async updateProfile(userId: number, data: UpdateUserDto): Promise<User> {
+	public async updateProfile(userId: number, data: UpdateUserDto, t: TFunction): Promise<User> {
 		const user = await this.sequelizeService.modelsAll.User.findByPk(userId);
 
 		if (!user) {
-			throw new HTTPError(404, 'Пользователь не найден. Пожалуйста, проверьте введенные данные.');
+			throw new HTTPError(404, t('userNotFound'));
 		}
 
 		user.update({

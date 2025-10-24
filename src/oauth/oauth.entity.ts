@@ -1,3 +1,4 @@
+import { TFunction } from 'i18next';
 import { HTTPError } from '../errors/http.error.class';
 import { TypeBaseProviderOptions } from './types/base-provider-options.types';
 import { TypeUserInfo } from './types/user-info.types';
@@ -27,7 +28,7 @@ export class OAuthEntity {
 		return `${this.options.authorize_url}?${query}`;
 	}
 
-	public async findUserByCode(code: string): Promise<TypeUserInfo> {
+	public async findUserByCode(code: string, t: TFunction): Promise<TypeUserInfo> {
 		const client_id = this.options.client_id;
 		const client_secret = this.options.client_secret;		
 
@@ -54,7 +55,7 @@ export class OAuthEntity {
 		if (!tokensRequest.ok) {
 			throw new HTTPError(
 				400,
-				`Не удалось получить пользователя с ${this.options.profile_url}. Проверьте правильность токена доступа.`,
+				t('failedToGetUserWithUrl', { profile_url: this.options.profile_url }),
 			'OAuthEntity - !tokensRequest.ok');
 		}
 

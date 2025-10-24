@@ -73,13 +73,13 @@ export class AuthController extends BaseController implements IAuthController {
 		]);
 	}
 
-	public async register({ body }: Request, res: Response, next: NextFunction): Promise<void> {
-		const data = await this.authService.register(body);
+	public async register({ body, t }: Request, res: Response, next: NextFunction): Promise<void> {
+		const data = await this.authService.register(body, t);
 		res.status(201).json(data);
 	}
 
-	public async login({ body, session }: Request, res: Response, next: NextFunction): Promise<void> {
-		const user = await this.authService.login(body, session);
+	public async login({ body, t, session }: Request, res: Response, next: NextFunction): Promise<void> {
+		const user = await this.authService.login(body, session, t);
 		res.status(200).json(user);
 	}
 
@@ -89,23 +89,23 @@ export class AuthController extends BaseController implements IAuthController {
 		res.status(204).end();
 	}
 
-	public async resetPassword({ body }: Request, res: Response, next: NextFunction) {
-		const result = await this.authService.resetPassword(body);
+	public async resetPassword({ body, t }: Request, res: Response, next: NextFunction) {
+		const result = await this.authService.resetPassword(body, t);
 		res.status(200).json(result);
 	}
 
-	public async newPassword({ body, params }: Request, res: Response, next: NextFunction) {
-		const result = await this.authService.newPassword(body, params.token);
+	public async newPassword({ body, params, t }: Request, res: Response, next: NextFunction) {
+		const result = await this.authService.newPassword(body, params.token, t);
 		res.status(200).json(result);
 	}
 
 	public async emailUpdate(req: Request, res: Response, next: NextFunction) {
-		const data = await this.authService.emailUpdate(req.body.email, req.user!, req.body?.code);
+		const data = await this.authService.emailUpdate(req.body.email, req.user!, req.t, req.body?.code);
 		res.status(200).json(data);
 	}
 
-	public async passwordUpdate({ body, session }: Request, res: Response, next: NextFunction) {
-		const data = await this.authService.passwordUpdate(body.oldPassword, body.password, session.userId!, body?.code);
+	public async passwordUpdate({ body, session, t }: Request, res: Response, next: NextFunction) {
+		const data = await this.authService.passwordUpdate(body.oldPassword, body.password, t, session.userId!,  body?.code);
 		res.status(200).json(data);
 	}
 }

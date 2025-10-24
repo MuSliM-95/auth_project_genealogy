@@ -9,7 +9,7 @@ export class AuthMiddleware implements IMiddleware {
 
 	async execute(req: Request, res: Response, next: NextFunction): Promise<void> {
 		if (req.session.userId) {
-			req.user = await this.userService.getUserById(req.session.userId);			
+			req.user = await this.userService.getUserById(req.session.userId, req.t);			
 			next();
 		} else {
 			next();

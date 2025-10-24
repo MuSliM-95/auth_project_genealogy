@@ -20,6 +20,9 @@ import { IUserService } from './user/interfaces/user.service.interface';
 import { OAuthController } from './oauth/oauth.controller';
 import { IConfirmationController } from './confirmation/interfaces/confirmation.controller.interface';
 import { ConfirmationController } from './confirmation/confirmation.controller';
+import i18nextMiddleware from 'i18next-http-middleware';
+import { I18nConfig } from './configs/i18n.config';
+
 
 @injectable()
 export class App {
@@ -40,6 +43,7 @@ export class App {
 		@inject(TYPES.CorsConfig) private corsConfig: CorsConfig,
 		@inject(TYPES.RedisConfig) private redisConfig: RedisConfig,
 		@inject(TYPES.ILogger) private logger: ILogger,
+		@inject(TYPES.I18nConfig) private I18nConfig: I18nConfig,
 		@inject(TYPES.ExceptionFilter) private exceptionFilter: IExceptionFilter,
 	) {
 		this.port = Number(this.dotenvConfig.get('APPLICATION_PORT'));
@@ -60,6 +64,7 @@ export class App {
 		this.app.use(cookieParser(this.dotenvConfig.get('COOKIES_SECRET')));
 		this.app.use(cors(this.corsConfig.config));
 		this.app.use(session(this.sessionConfig));
+		this.app.use(i18nextMiddleware.handle(this.I18nConfig.i18n))
 		const authMiddleware = new AuthMiddleware(this.userService);
 		this.app.use(authMiddleware.execute.bind(authMiddleware));
 		this.app.use(helmet({ crossOriginResourcePolicy: false }));
@@ -72,9 +77,10 @@ export class App {
 	public async init(): Promise<void> {
 		this.useMiddleware();
 		await this.sequelize.connect();
+		await this.I18nConfig.init()
 		this.userRoutes();
 		this.useExceptionFilter();
-
+	
 		this.server = this.app.listen(this.port);
 		this.logger.log(`Сервер запушен на http://localhost:${this.port}`);
 	}

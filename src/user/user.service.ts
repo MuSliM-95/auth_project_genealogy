@@ -7,6 +7,7 @@ import { HTTPError } from '../errors/http.error.class';
 import { User } from './model/user.model';
 import { AuthData } from '../auth/auth.entity';
 import { UpdateUserDto } from './dto/update.user.dto';
+import { TFunction } from 'i18next';
 
 @injectable()
 export class UserService implements IUserService {
@@ -19,23 +20,23 @@ export class UserService implements IUserService {
        return this.userRepository.create(user)
 	}
 
-	public async getUserById(id: number): Promise<User> {
+	public async getUserById(id: number, t: TFunction): Promise<User> {
 		const user = await this.userRepository.findUserById(id);
 		
 
 		if (!user) {
-			throw new HTTPError(404, 'Пользователь не найден. Пожалуйста, проверьте введенные данные.', 'getUserById');
+			throw new HTTPError(404, t('userNotFound'), 'getUserById');
 		}
 
 		return user;
 	}
 
-	public async getUserByEmailWithPassword(id: number): Promise<User> {
+	public async getUserByEmailWithPassword(id: number, t: TFunction): Promise<User> {
 		const user = await this.userRepository.findUserByIdWithPassword(id);
 		
 
 		if (!user) {
-			throw new HTTPError(404, 'Пользователь не найден. Пожалуйста, проверьте введенные данные.', 'getUserById');
+			throw new HTTPError(404, t('userNotFound'), 'getUserById');
 		}
 
 		return user;
@@ -45,7 +46,6 @@ export class UserService implements IUserService {
 		return this.userRepository.findUserByEmail(email);
 	}
 
-	
 
 	public async userUpdateIsVerified(id: number, isVerified: boolean): Promise<number> {
 		return this.userRepository.userUpdateIsVerified(id, isVerified)
@@ -55,8 +55,8 @@ export class UserService implements IUserService {
 		return this.userRepository.updatePassword(id, passwordHash)
 	}
 
-	public async updateProfile(id: number, data: UpdateUserDto): Promise<User> {
-		return this.userRepository.updateProfile(id, data)
+	public async updateProfile(id: number, data: UpdateUserDto, t: TFunction): Promise<User> {
+		return this.userRepository.updateProfile(id, data, t)
 	}
 
 	public async emailUpdate(email:string, userId: number): Promise<number> {
