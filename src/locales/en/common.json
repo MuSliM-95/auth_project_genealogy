@@ -45,5 +45,13 @@
     "userNotFoundRetry": "User not found. Please check the email address you entered and try again.",
 
 	"failedToGetUserWithUrl": "Failed to retrieve user from {{profile_url}}. Please check the validity of your access token.",
-	"noTokensWithUrl": "No tokens found at {{access_url}}. Please make sure the authorization code is valid."
+	"noTokensWithUrl": "No tokens found at {{access_url}}. Please make sure the authorization code is valid.",
+
+	"accountDeletionHTML": "Account deletion",
+	"accountDeletionCodeHTML": "Confirmation code for account deletion",
+	"pleaseEnterDeletionCodeHTML": "Please enter this code to delete your account",
+	"unauthorizedCodeWarningHTML": "If you did not request this code, someone else might have accessed your account. Please change your login credentials immediately.",
+
+	"confirmationCodeSent": "The confirmation code has been sent to your email.",
+	"accountDeleted": "Your account has been deleted."
 }

@@ -13,8 +13,8 @@ export class TokenService implements ITokenService {
 		@inject(TYPES.RedisConfig) private redisConfig: RedisConfig
 		) {}
 
-	public async createToken(email: string, token: string, expiresIn: Date, type: TokenTypes ) {
-		return this.tokenRepository.createToken(email, token,  expiresIn, type)
+	public async createToken(email: string, token: string, userId: number, expiresIn: Date, type: TokenTypes ) {
+		return this.tokenRepository.create(email, token, userId,  expiresIn, type)
 	}
 	
 	public async findTokenUnique(token: string, type: TokenTypes) {

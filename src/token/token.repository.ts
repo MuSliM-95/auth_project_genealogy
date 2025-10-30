@@ -34,10 +34,11 @@ export class TokenRepository implements ITokenRepository {
 		})
 	}
 
-	public async createToken(email: string, token: string, expiresIn: Date, type: TokenTypes): Promise<Token> {
+	public async create(email: string, token: string, userId: number, expiresIn: Date, type: TokenTypes): Promise<Token> {
 		return this.sequelizeService.modelsAll.Token.create({
 		   email,
 		   token,
+		   userId,
 		   expiresIn,
 		   type,
 		})

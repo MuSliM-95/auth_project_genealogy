@@ -27,7 +27,7 @@ export class ConfirmationController extends BaseController implements IConfirmat
 				path: '/auth/new-email/confirmation',
 				method: 'patch',
 				func: this.newEmailVerification,
-				middlewares: [new AuthGuard(), new ValidateMiddleware(ConfirmationDto)],
+				middlewares: [new ValidateMiddleware(ConfirmationDto)],
 			},
 		]);
 	}
@@ -47,7 +47,6 @@ export class ConfirmationController extends BaseController implements IConfirmat
 		next: NextFunction,
 	) {
 		await this.confirmationService.verificationNewEmail(
-			session.userId!,
 			body.token!.toString(),
 			t
 		);

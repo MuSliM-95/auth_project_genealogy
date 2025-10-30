@@ -10,8 +10,10 @@ export interface IAuthController {
 	resetPassword: (req: Request, res: Response, next: NextFunction) => Promise<void>;
 
 	newPassword: (req: Request, res: Response, next: NextFunction) => Promise<void>;
-	
+
 	emailUpdate: (req: Request, res: Response, next: NextFunction) => Promise<void>;
 
 	passwordUpdate: (req: Request, res: Response, next: NextFunction) => Promise<void>;
+
+	deleteProfile(req: Request, res: Response, next: NextFunction): Promise<void>;
 }

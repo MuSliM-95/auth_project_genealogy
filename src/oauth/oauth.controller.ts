@@ -50,7 +50,6 @@ export class OAuthController extends BaseController {
 	public async callback(req: Request, res: Response, next: NextFunction) {
 		const { session, params, query, t } = req;
 		if (!query.code || typeof query.code !== 'string') {
-			console.log(query.code);
 			
 			throw new HTTPError(400, 'Не был предоставлен код авторизации', 'callback');
 		}

@@ -1,8 +1,10 @@
 import { CreationOptional, InferAttributes, InferCreationAttributes } from 'sequelize';
-import { Column, CreatedAt, DataType, Model, Table, UpdatedAt } from 'sequelize-typescript';
+import { Column, CreatedAt, DataType, ForeignKey, Model, Table, UpdatedAt } from 'sequelize-typescript';
+import { User } from '../../user/model/user.model';
 
 export enum TokenTypes {
 	verification = 'VERIFICATION',
+	profile_delete = 'PROFILE_DELETE',
 	two_factor = 'TWO_FACTOR',
 	password_reset = 'PASSWORD_RESET'
 }
@@ -11,6 +13,10 @@ export enum TokenTypes {
 export class Token extends Model<InferAttributes<Token>, InferCreationAttributes<Token>> {
 	@Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
 	declare id: CreationOptional<number>;
+
+	@ForeignKey(() => User)
+	@Column({ type: DataType.INTEGER, allowNull: false })
+	declare userId: number
 
 	@Column({ type: DataType.STRING, allowNull: false })
 	declare email: string;

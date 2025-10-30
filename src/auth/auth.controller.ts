@@ -14,6 +14,7 @@ import { ResetPasswordDto } from './dto/reset.password.dto';
 import { NewPasswordDto } from './dto/new.password.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { UpdatePasswordDto } from './dto/update.password.dto';
+import { CodeDto } from './dto/code.dto';
 
 @injectable()
 export class AuthController extends BaseController implements IAuthController {
@@ -63,12 +64,18 @@ export class AuthController extends BaseController implements IAuthController {
 				func: this.emailUpdate,
 				middlewares: [new AuthGuard(), new ValidateMiddleware(ResetPasswordDto)],
 			},
-
 			{
 				path: '/auth/update-password',
 				method: 'patch',
 				func: this.passwordUpdate,
 				middlewares: [new AuthGuard(), new ValidateMiddleware(UpdatePasswordDto)],
+			},
+
+			{
+				path: '/auth/delete-profile',
+				method: 'delete',
+				func: this.deleteProfile,
+				middlewares: [new AuthGuard(), new ValidateMiddleware(CodeDto)],
 			},
 		]);
 	}
@@ -78,7 +85,11 @@ export class AuthController extends BaseController implements IAuthController {
 		res.status(201).json(data);
 	}
 
-	public async login({ body, t, session }: Request, res: Response, next: NextFunction): Promise<void> {
+	public async login(
+		{ body, t, session }: Request,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {
 		const user = await this.authService.login(body, session, t);
 		res.status(200).json(user);
 	}
@@ -100,12 +111,38 @@ export class AuthController extends BaseController implements IAuthController {
 	}
 
 	public async emailUpdate(req: Request, res: Response, next: NextFunction) {
-		const data = await this.authService.emailUpdate(req.body.email, req.user!, req.t, req.body?.code);
+		const data = await this.authService.emailUpdate(
+			req.body.email,
+			req.user!,
+			req.t,
+			req.body?.code,
+		);
 		res.status(200).json(data);
 	}
 
 	public async passwordUpdate({ body, session, t }: Request, res: Response, next: NextFunction) {
-		const data = await this.authService.passwordUpdate(body.oldPassword, body.password, t, session.userId!,  body?.code);
+		const data = await this.authService.passwordUpdate(
+			body.oldPassword,
+			body.password,
+			t,
+			session.userId!,
+			body?.code,
+		);
+		res.status(200).json(data);
+	}
+
+	public async deleteProfile(
+		{session, user, body, t }: Request,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {		
+		const data = await this.authService.deleteProfile(user!.id, t, body.code);
+
+		if(!data.needCode) {
+			await this.sessionService.deleteSession(session)
+			res.clearCookie(this.dotenvConfig.get('SESSION_NAME'))	
+		}
+
 		res.status(200).json(data);
 	}
 }

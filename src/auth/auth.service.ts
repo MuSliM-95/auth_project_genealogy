@@ -31,14 +31,14 @@ export class AuthService implements IAuthService {
 		@inject(TYPES.ConfirmationService) private confirmationService: IConfirmationService,
 	) {}
 
-	public async register({ name, email, password }: RegisterDto, t: TFunction): Promise<{ message: string }> {
+	public async register(
+		{ name, email, password }: RegisterDto,
+		t: TFunction,
+	): Promise<{ message: string }> {
 		const isExists = await this.userService.getUserEmail(email);
 
 		if (isExists) {
-			throw new HTTPError(
-				422,
-				t('registrationFailedEmailExists'),
-			);
+			throw new HTTPError(422, t('registrationFailedEmailExists'));
 		}
 
 		const userData = new AuthData(email, name, AuthMethod.credentials, false, '');
@@ -47,11 +47,10 @@ export class AuthService implements IAuthService {
 
 		const user = await this.userService.createUser(userData);
 
-		await this.confirmationService.sendVerificationToken(user.email, 'auth/new-verification', t);
+		await this.confirmationService.sendVerificationToken(user.email, user.id, 'auth/new-verification', t);
 
 		return {
-			message:
-				t('registrationSuccess'),
+			message: t('registrationSuccess'),
 		};
 	}
 
@@ -82,20 +81,20 @@ export class AuthService implements IAuthService {
 		}
 
 		if (!user.isVerified) {
-			await this.confirmationService.sendVerificationToken(user.email, 'auth/new-verification', t);
+			await this.confirmationService.sendVerificationToken(user.email, user.id, 'auth/new-verification', t);
 			throw new HTTPError(401, t('emailNotVerified'));
 		}
 
 		if (user.isTwoFactorEnabled) {
 			if (!dto.code) {
-				await this.sendTwoFactorToken(user.email, t);
+				await this.sendTwoFactorToken(user.email, user.id, t);
 
 				return {
 					message: t('twoFactorRequired'),
 				};
 			}
 
-			await this.validateTwoFactorToken(user.email, dto.code, t);
+			await this.validateTokenCode(user.email, dto.code, TokenTypes.two_factor, t);
 		}
 
 		const { password, ...rest } = user;
@@ -107,20 +106,17 @@ export class AuthService implements IAuthService {
 		const existingUser = await this.userService.getUserEmail(dto.email);
 
 		if (!existingUser) {
-			throw new HTTPError(
-				404,
-				t('userNotFound'),
-			);
+			throw new HTTPError(404, t('userNotFound'));
 		}
 
-		const passwordResetToken = await this.generatePasswordResetToken(dto.email);
+		const passwordResetToken = await this.generatePasswordResetToken(dto.email, existingUser.id);
 
 		await this.mailService.sendPasswordResetEmail(dto.email, passwordResetToken.token, t);
 
 		return true;
 	}
 
-	private async generatePasswordResetToken(email: string): Promise<Token> {
+	private async generatePasswordResetToken(email: string, userId: number): Promise<Token> {
 		const token = uuidv4();
 		const expiresIn = new Date(new Date().getTime() + 3600 * 1000);
 
@@ -133,6 +129,7 @@ export class AuthService implements IAuthService {
 		const passwordResetToken = await this.tokenService.createToken(
 			email,
 			token,
+			userId,
 			expiresIn,
 			TokenTypes.password_reset,
 		);
@@ -140,32 +137,27 @@ export class AuthService implements IAuthService {
 		return passwordResetToken;
 	}
 
-	public async newPassword({ password }: NewPasswordDto, token: string, t: TFunction): Promise<boolean> {
+	public async newPassword(
+		{ password }: NewPasswordDto,
+		token: string,
+		t: TFunction,
+	): Promise<boolean> {
 		const existingToken = await this.tokenService.findTokenUnique(token, TokenTypes.password_reset);
 
 		if (!existingToken) {
-			throw new HTTPError(
-				404,
-				t('tokenNotFound'),
-			);
+			throw new HTTPError(404, t('tokenNotFound'));
 		}
 
 		const hasExpired = new Date(existingToken.expiresIn) < new Date();
 
 		if (hasExpired) {
-			throw new HTTPError(
-				400,
-				t('tokenExpired'),
-			);
+			throw new HTTPError(400, t('tokenExpired'));
 		}
 
 		const existingUser = await this.userService.getUserEmail(existingToken.email);
 
 		if (!existingUser) {
-			throw new HTTPError(
-				404,
-				t('userNotFound'),
-			);
+			throw new HTTPError(404, t('userNotFound'));
 		}
 
 		const passwordHash = await hash(password, 10);
@@ -177,60 +169,51 @@ export class AuthService implements IAuthService {
 		return true;
 	}
 
-	public async generateTwoFactorToken(email: string): Promise<Token> {
-		const token = Math.floor(Math.random() * (1000000 - 100000) + 100000).toString();
+	public async generateCode(email: string, userId: number, tokenType: TokenTypes): Promise<Token> {
+		const code = Math.floor(Math.random() * (1000000 - 100000) + 100000).toString();
 
 		const expiresIn = new Date(new Date().getTime() + 300000);
 
-		const existingToken = await this.tokenService.findToken(email, TokenTypes.two_factor);
+		const existingToken = await this.tokenService.findToken(email, tokenType);
 
 		if (existingToken) {
-			await this.tokenService.deleteToken(existingToken.id, TokenTypes.two_factor);
+			await this.tokenService.deleteToken(existingToken.id, tokenType);
 		}
 
-		const twoFactorToken = await this.tokenService.createToken(
-			email,
-			token,
-			expiresIn,
-			TokenTypes.two_factor,
-		);
+		const newToken = await this.tokenService.createToken(email, code, userId, expiresIn, tokenType);
 
-		return twoFactorToken;
+		return newToken;
 	}
 
-	private async validateTwoFactorToken(email: string, code: string, t: TFunction) {
-		const existingToken = await this.tokenService.findToken(email, TokenTypes.two_factor);
+	private async validateTokenCode(
+		email: string,
+		code: string,
+		tokenType: TokenTypes,
+		t: TFunction,
+	) {
+		const existingToken = await this.tokenService.findToken(email, tokenType);
 
 		if (!existingToken) {
-			throw new HTTPError(
-				404,
-				t('twoFactorTokenNotFound'),
-			);
+			throw new HTTPError(404, t('twoFactorTokenNotFound'));
 		}
 
 		if (existingToken.token !== code) {
-			throw new HTTPError(
-				400,
-				t('invalidTwoFactorCode'),
-			);
+			throw new HTTPError(400, t('invalidTwoFactorCode'));
 		}
 
 		const hasExpired = new Date(existingToken.expiresIn) < new Date();
 
 		if (hasExpired) {
-			throw new HTTPError(
-				400,
-				t('twoFactorTokenExpired'),
-			);
+			throw new HTTPError(400, t('twoFactorTokenExpired'));
 		}
 
-		await this.tokenService.deleteToken(existingToken.id, TokenTypes.two_factor);
+		await this.tokenService.deleteToken(existingToken.id, tokenType);
 
 		return true;
 	}
 
-	public async sendTwoFactorToken(email: string, t: TFunction) {
-		const twoFactorToken = await this.generateTwoFactorToken(email);
+	public async sendTwoFactorToken(email: string, userId: number, t: TFunction) {
+		const twoFactorToken = await this.generateCode(email, userId,  TokenTypes.two_factor);
 		await this.mailService.sendTwoFactorTokenEmail(twoFactorToken.email, twoFactorToken.token, t);
 		return true;
 	}
@@ -245,13 +228,13 @@ export class AuthService implements IAuthService {
 
 		if (user.isTwoFactorEnabled) {
 			if (!code) {
-				await this.sendTwoFactorToken(user.email, t);
+				await this.sendTwoFactorToken(user.email, user.id, t);
 				return {
 					messageTwo: t('twoFactorRequired'),
 				};
 			}
 
-			await this.validateTwoFactorToken(user.email, code, t);
+			await this.validateTokenCode(user.email, code, TokenTypes.two_factor, t);
 		}
 
 		if (existsEmail) {
@@ -262,7 +245,7 @@ export class AuthService implements IAuthService {
 			throw new HTTPError(403, t('invalidAction'), 'emailUpdate');
 		}
 
-		await this.confirmationService.sendVerificationToken(email, 'auth/new-email', t);
+		await this.confirmationService.sendVerificationToken(email, user.id, 'auth/new-email', t);
 
 		return { message: t('checkEmailForConfirmation') };
 	}
@@ -284,13 +267,13 @@ export class AuthService implements IAuthService {
 
 		if (user.isTwoFactorEnabled) {
 			if (!code) {
-				await this.sendTwoFactorToken(user.email, t);
+				await this.sendTwoFactorToken(user.email, userId, t);
 				return {
 					messageTwo: t('twoFactorRequired'),
 				};
 			}
 
-			await this.validateTwoFactorToken(user.email, code, t);
+			await this.validateTokenCode(user.email, code, TokenTypes.two_factor, t);
 		}
 
 		const passwordHash = await hash(newPassword, 10);
@@ -305,6 +288,33 @@ export class AuthService implements IAuthService {
 
 		return {
 			message: t('passwordChanged'),
+		};
+	}
+
+	public async deleteProfile(
+		userId: number,
+		t: TFunction,
+		code?: string,
+	): Promise<{ message: string; needCode: boolean }> {
+		const user = await this.userService.getUserById(userId, t);
+
+		if (!code) {
+			const tokenCode = await this.generateCode(user.email, userId, TokenTypes.profile_delete);
+
+			await this.mailService.sendDeleteProfileCode(user.email, tokenCode.token, t);
+			return {
+				message: t('confirmationCodeSent'),
+				needCode: true,
+			};
+		}
+
+		await this.validateTokenCode(user.email, code, TokenTypes.profile_delete, t);
+
+		await this.userService.deleteUser(userId);
+
+		return {
+			message: t('accountDeleted'),
+			needCode: false,
 		};
 	}
 }

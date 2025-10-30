@@ -63,4 +63,5 @@ export class UserController extends BaseController implements IUserController {
 		const userData = await this.userService.updateProfile(userId!, body, t);
 		res.status(200).json(userData);
 	}
+
 }

@@ -2,7 +2,6 @@ import { IUserService } from './interfaces/user.service.interface';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { IUserRepository } from './interfaces/user.repository.interface';
-import { ISessionService } from '../common/session.service.interface';
 import { HTTPError } from '../errors/http.error.class';
 import { User } from './model/user.model';
 import { AuthData } from '../auth/auth.entity';
@@ -12,17 +11,15 @@ import { TFunction } from 'i18next';
 @injectable()
 export class UserService implements IUserService {
 	constructor(
-		@inject(TYPES.UserRepository) private userRepository: IUserRepository,
-		@inject(TYPES.SessionService) private sessionService: ISessionService,
+		@inject(TYPES.UserRepository) private userRepository: IUserRepository
 	) {}
 
 	public async createUser(user: AuthData): Promise<User> {
-       return this.userRepository.create(user)
+		return this.userRepository.create(user);
 	}
 
 	public async getUserById(id: number, t: TFunction): Promise<User> {
 		const user = await this.userRepository.findUserById(id);
-		
 
 		if (!user) {
 			throw new HTTPError(404, t('userNotFound'), 'getUserById');
@@ -33,7 +30,6 @@ export class UserService implements IUserService {
 
 	public async getUserByEmailWithPassword(id: number, t: TFunction): Promise<User> {
 		const user = await this.userRepository.findUserByIdWithPassword(id);
-		
 
 		if (!user) {
 			throw new HTTPError(404, t('userNotFound'), 'getUserById');
@@ -46,20 +42,24 @@ export class UserService implements IUserService {
 		return this.userRepository.findUserByEmail(email);
 	}
 
-
 	public async userUpdateIsVerified(id: number, isVerified: boolean): Promise<number> {
-		return this.userRepository.userUpdateIsVerified(id, isVerified)
+		return this.userRepository.userUpdateIsVerified(id, isVerified);
 	}
 
 	public async userPasswordUpdate(id: number, passwordHash: string): Promise<number> {
-		return this.userRepository.updatePassword(id, passwordHash)
+		return this.userRepository.updatePassword(id, passwordHash);
 	}
 
 	public async updateProfile(id: number, data: UpdateUserDto, t: TFunction): Promise<User> {
-		return this.userRepository.updateProfile(id, data, t)
+		return this.userRepository.updateProfile(id, data, t);
 	}
 
-	public async emailUpdate(email:string, userId: number): Promise<number> {
-		return this.userRepository.emailUpdate(email, userId)
+	public async emailUpdate(email: string, userId: number): Promise<number> {
+		return this.userRepository.emailUpdate(email, userId);
 	}
+
+	public async deleteUser(userId: number): Promise<number> {
+      return  this.userRepository.delete(userId)
+	}
+
 }

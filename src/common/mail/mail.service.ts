@@ -9,6 +9,7 @@ import { TwoFactorAuthTemplate } from '../../auth/libs/templates/two-factor-auth
 import { UpdatePasswordTemplate } from '../../auth/libs/templates/updatePassword.tamplate';
 import { TFunction } from 'i18next';
 import { ILogger } from '../../logger/logger.interface';
+import { DeleteProfileTemplate } from '../../auth/libs/templates/delete.profile.template';
 
 @injectable()
 export class MailService {
@@ -29,6 +30,7 @@ export class MailService {
 			this.logger.error(`[MailService.sendConfirmationEmail]. ${error}`);
 		}
 	}
+
 	public async sendPasswordResetEmail(email: string, token: string, t: TFunction) {
 		const domain = this.dotenvConfig.get('CLIENT_URL_NAME');
 		try {
@@ -38,6 +40,7 @@ export class MailService {
 			this.logger.error(`[MailService.sendPasswordResetEmail]. ${error}`);
 		}
 	}
+
 
 	public async sendPasswordUpdateEmail(email: string, t: TFunction) {
 		const domain = this.dotenvConfig.get('CLIENT_URL_NAME');
@@ -58,6 +61,15 @@ export class MailService {
 		}
 	}
 
+	public async sendDeleteProfileCode(email: string, token: string, t: TFunction) {
+		try {
+			 const html = await render(DeleteProfileTemplate({token, t}))
+			 return this.sendMail(email, t('accountDeletionHTML'), html);
+		} catch (error) {
+			this.logger.error(`[MailService.sendDeleteProfileCode]. ${error}`);
+		}
+	}
+
 	private sendMail(email: string, subject: string, html: string): Promise<unknown> {
 		return this.mailConfig.transporter.sendMail({
 			from: `Genealogy ${this.dotenvConfig.get('MAIL_LOGIN')}`,
@@ -66,4 +78,6 @@ export class MailService {
 			html,
 		});
 	}
+
+
 }

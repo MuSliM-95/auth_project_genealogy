@@ -8,7 +8,6 @@ import { UpdateUserDto } from './dto/update.user.dto';
 import { HTTPError } from '../errors/http.error.class';
 import { TFunction } from 'i18next';
 
-
 @injectable()
 export class UserRepository implements IUserRepository {
 	constructor(@inject(TYPES.SequelizeService) private sequelizeService: SequelizeService) {}
@@ -38,20 +37,20 @@ export class UserRepository implements IUserRepository {
 	public async findUserById(id: number): Promise<User | null> {
 		return this.sequelizeService.modelsAll.User.findByPk(id, {
 			attributes: { exclude: ['password'] },
-			raw: true
+			raw: true,
 		});
 	}
 
 	public async findUserByIdWithPassword(id: number): Promise<User | null> {
 		return this.sequelizeService.modelsAll.User.findByPk(id, {
-			raw: true
+			raw: true,
 		});
 	}
 
 	public async findUserByEmail(email: string): Promise<User | null> {
 		return this.sequelizeService.modelsAll.User.findOne({
 			where: { email },
-			raw: true
+			raw: true,
 		});
 	}
 
@@ -90,15 +89,21 @@ export class UserRepository implements IUserRepository {
 	}
 
 	public async emailUpdate(email: string, userId: number): Promise<number> {
-		const [ affectedCount ] = await this.sequelizeService.modelsAll.User.update(
+		const [affectedCount] = await this.sequelizeService.modelsAll.User.update(
 			{ email },
 			{
 				where: { id: userId },
 			},
 		);
 
-		return affectedCount
+		return affectedCount;
 	}
 
-
+	public async delete(userId: number): Promise<number> {
+		return this.sequelizeService.modelsAll.User.destroy({
+			where: {
+				id: userId,
+			},
+		});
+	}
 }

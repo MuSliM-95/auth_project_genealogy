@@ -35,11 +35,7 @@ export class ConfirmationService implements IConfirmationService {
           throw new HTTPError(400, t('confirmationTokenExpired'))
 		}
 
-		const existingUser = await this.userService.getUserEmail(existingToken.email)
-
-		if(!existingUser) {
-			throw new HTTPError(404, t('userNotFoundRetry'))
-		}
+		const existingUser = await this.userService.getUserById(existingToken.userId, t)
 
 		await this.userService.userUpdateIsVerified(existingUser.id, true)
 
@@ -49,7 +45,7 @@ export class ConfirmationService implements IConfirmationService {
 		return this.sessionService.saveSession(session, rest)
 	}
 
-	public async verificationNewEmail(userId: number, token: string, t: TFunction): Promise<boolean> {
+	public async verificationNewEmail(token: string, t: TFunction): Promise<boolean> {
 		const existingToken = await this.tokenService.findTokenUnique(token, TokenTypes.verification)
 
 		if(!existingToken) {
@@ -62,7 +58,7 @@ export class ConfirmationService implements IConfirmationService {
 			throw new HTTPError(400, t('confirmationTokenExpired'))
 		}
         
-		await this.userService.emailUpdate(existingToken.email, userId)
+		await this.userService.emailUpdate(existingToken.email,  existingToken.userId)
 
 		await this.tokenService.deleteToken(existingToken.id, TokenTypes.verification)
 
@@ -70,15 +66,15 @@ export class ConfirmationService implements IConfirmationService {
 
 	}
 
-	public async sendVerificationToken(email: string, pathUrl: string, t: TFunction): Promise<boolean> {
-		const verificationToken = await this.generateVerificationToken(email)
+	public async sendVerificationToken(email: string, userId: number, pathUrl: string, t: TFunction): Promise<boolean> {
+		const verificationToken = await this.generateVerificationToken(email, userId)
  		
 		await this.mailService.sendConfirmationEmail(verificationToken.email, verificationToken.token, pathUrl, t)
 
 		return true
 	}
 	
-	private async generateVerificationToken(email: string): Promise<Token> {
+	private async generateVerificationToken(email: string, userId: number,): Promise<Token> {
 		const token = uuidv4();
 		const expiresIn = new Date(new Date().getTime() + 3600 * 1000);
 
@@ -92,6 +88,7 @@ export class ConfirmationService implements IConfirmationService {
 		const verification = await this.tokenService.createToken(
 			email,
 			token,
+			userId,
 			expiresIn,
 			TokenTypes.verification,
 		);
