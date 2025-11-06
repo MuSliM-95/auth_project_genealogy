@@ -11,15 +11,16 @@ export type UserAttributes = InferAttributes<User>;
 export type UserType = Omit<UserAttributes, 'password'>;
 
 export interface IAuthService {
-	register: (dto: RegisterDto, t: TFunction) => Promise<{ message: string }>;
+	register: (dto: RegisterDto, t: TFunction, lang: string) => Promise<{ message: string }>;
 
 	login: (
 		dto: LoginDto,
 		session: Request['session'],
 		t: TFunction,
+		lang: string
 	) => Promise<{ user: UserType } | { message: string }>;
 
-	resetPassword: (dto: ResetPasswordDto, t: TFunction) => Promise<boolean>;
+	resetPassword: (dto: ResetPasswordDto, t: TFunction, lang: string) => Promise<boolean>;
 
 	newPassword: (dto: NewPasswordDto, token: string, t: TFunction) => Promise<boolean>;
 
@@ -27,6 +28,7 @@ export interface IAuthService {
 		email: string,
 		user: User,
 		t: TFunction,
+		lang: string,
 		code?: string,
 	) => Promise<{ message: string } | { messageTwo: string }>;
 
@@ -34,6 +36,7 @@ export interface IAuthService {
 		oldPassword: string,
 		newPassword: string,
 		t: TFunction,
+		lang: string,
 		userId: number,
 		code?: string,
 	) => Promise<{ message: string } | { messageTwo: string }>;

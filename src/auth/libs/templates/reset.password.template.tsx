@@ -8,14 +8,12 @@ import * as React from 'react';
 import { TFunction } from 'i18next';
 
 interface ResetPasswordTemplateProps {
-	domain: string;
-	token: string;
 	t: TFunction;
+	resetLink: string
 }
 
-export function ResetPasswordTemplate({ domain, token, t }: ResetPasswordTemplateProps) {
-	const resetLink = `${domain}/auth/new-password?token=${token}`;
-
+export function ResetPasswordTemplate({ t, resetLink }: ResetPasswordTemplateProps) {
+	
 	return (
 		<Tailwind>
 			<Html>

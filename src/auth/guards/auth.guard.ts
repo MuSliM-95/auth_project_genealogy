@@ -8,7 +8,7 @@ export class AuthGuard implements IMiddleware {
 			return next(
 				new HTTPError(
 					401,
-					'Пользователь не авторизован. Пожалуйста, войдите в систему, чтобы получить доступ.',
+					req.t('userNotAuthorized')
 				),
 			);
 		}

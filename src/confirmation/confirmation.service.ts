@@ -39,7 +39,7 @@ export class ConfirmationService implements IConfirmationService {
 
 		await this.userService.userUpdateIsVerified(existingUser.id, true)
 
-		await this.tokenService.deleteToken(existingToken.id, TokenTypes.verification)
+		await this.tokenService.deleteTokenById(existingToken.id, TokenTypes.verification)
         const { password, ...rest } = existingUser
 		
 		return this.sessionService.saveSession(session, rest)
@@ -60,21 +60,21 @@ export class ConfirmationService implements IConfirmationService {
         
 		await this.userService.emailUpdate(existingToken.email,  existingToken.userId)
 
-		await this.tokenService.deleteToken(existingToken.id, TokenTypes.verification)
+		await this.tokenService.deleteTokenById(existingToken.id, TokenTypes.verification)
 
         return true
 
 	}
 
-	public async sendVerificationToken(email: string, userId: number, pathUrl: string, t: TFunction): Promise<boolean> {
+	public async sendVerificationToken(email: string, userId: number, pathUrl: string, t: TFunction, lang: string): Promise<boolean> {
 		const verificationToken = await this.generateVerificationToken(email, userId)
  		
-		await this.mailService.sendConfirmationEmail(verificationToken.email, verificationToken.token, pathUrl, t)
+		await this.mailService.sendConfirmationEmail(verificationToken.email, verificationToken.token, pathUrl, t, lang)
 
 		return true
 	}
 	
-	private async generateVerificationToken(email: string, userId: number,): Promise<Token> {
+	private async generateVerificationToken(email: string, userId: number): Promise<Token> {
 		const token = uuidv4();
 		const expiresIn = new Date(new Date().getTime() + 3600 * 1000);
 
@@ -82,7 +82,7 @@ export class ConfirmationService implements IConfirmationService {
 
 
 		if (existingToken) {
-			await this.tokenService.deleteToken(existingToken.id, TokenTypes.verification);
+			await this.tokenService.deleteTokenById(existingToken.id, TokenTypes.verification);
 		}
 
 		const verification = await this.tokenService.createToken(

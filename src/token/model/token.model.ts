@@ -6,7 +6,8 @@ export enum TokenTypes {
 	verification = 'VERIFICATION',
 	profile_delete = 'PROFILE_DELETE',
 	two_factor = 'TWO_FACTOR',
-	password_reset = 'PASSWORD_RESET'
+	password_reset = 'PASSWORD_RESET',
+	tree_link = 'TREE_LINK'
 }
 
 @Table({ tableName: 'tokens' })

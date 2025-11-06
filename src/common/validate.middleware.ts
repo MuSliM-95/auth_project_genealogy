@@ -16,6 +16,7 @@ export class ValidateMiddleware implements IMiddleware {
 		const instance = plainToClass(this.classToValidate, data, {
 			enableImplicitConversion: true,
 		});
+ 
 		validate(instance).then((errors) => {
 			if (errors.length > 0) {
 				res.status(422).send(errors);

@@ -19,10 +19,9 @@ export class MailService {
 		@inject(TYPES.ILogger) private logger: ILogger,
 	) {}
 
-	public async sendConfirmationEmail(email: string, token: string, pathUrl: string, t: TFunction) {
+	public async sendConfirmationEmail(email: string, token: string, pathUrl: string, t: TFunction, lang: string) {
 		const domain = this.dotenvConfig.get('CLIENT_URL_NAME');
-		const confirmLink = `${domain}/${pathUrl}?token=${token}`;
-
+		const confirmLink = `${domain}/${lang}/${pathUrl}?token=${token}`;
 		try {
 			const html = await render(ConfirmationTemplate({ confirmLink, t }));
 			return this.sendMail(email, t('emailConfirmationHTML'), html);
@@ -31,10 +30,11 @@ export class MailService {
 		}
 	}
 
-	public async sendPasswordResetEmail(email: string, token: string, t: TFunction) {
+	public async sendPasswordResetEmail(email: string, token: string, t: TFunction, lang: string) {
 		const domain = this.dotenvConfig.get('CLIENT_URL_NAME');
+		const resetLink = `${domain}/${lang}/auth/new-password?token=${token}`;
 		try {
-			const html = await render(ResetPasswordTemplate({ domain, token, t }));
+			const html = await render(ResetPasswordTemplate({ t, resetLink }));
 			return this.sendMail(email, t('passwordResetHTML'), html);
 		} catch (error) {
 			this.logger.error(`[MailService.sendPasswordResetEmail]. ${error}`);
@@ -42,10 +42,11 @@ export class MailService {
 	}
 
 
-	public async sendPasswordUpdateEmail(email: string, t: TFunction) {
+	public async sendPasswordUpdateEmail(email: string, t: TFunction, lang: string) {
 		const domain = this.dotenvConfig.get('CLIENT_URL_NAME');
+		const resetLink = `${domain}/${lang}/auth/reset-password`;
 		try {
-			const html = await render(UpdatePasswordTemplate({ domain, t }));
+			const html = await render(UpdatePasswordTemplate({ t, resetLink }));
 			return this.sendMail(email, t('passwordChangeHTML'), html);
 		} catch (error) {
 			this.logger.error(`[MailService.sendPasswordUpdateEmail]. ${error}`);

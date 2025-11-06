@@ -15,6 +15,10 @@ import { NewPasswordDto } from './dto/new.password.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { UpdatePasswordDto } from './dto/update.password.dto';
 import { CodeDto } from './dto/code.dto';
+import { ITokenService } from '../token/interfaces/token.service.interface';
+import { AuthMethodGuard } from './guards/auth.method.guard';
+import { IUserService } from '../user/interfaces/user.service.interface';
+import { TokenDto } from './dto/token.dto';
 
 @injectable()
 export class AuthController extends BaseController implements IAuthController {
@@ -22,6 +26,8 @@ export class AuthController extends BaseController implements IAuthController {
 		@inject(TYPES.ILogger) private loggerService: ILogger,
 		@inject(TYPES.DotenvConfig) private dotenvConfig: IDotenvConfig,
 		@inject(TYPES.AuthService) private authService: IAuthService,
+		@inject(TYPES.TokenService) private tokenService: ITokenService,
+		@inject(TYPES.UserService) private userService: IUserService,
 		@inject(TYPES.SessionService) private sessionService: ISessionService,
 	) {
 		super(loggerService);
@@ -49,26 +55,26 @@ export class AuthController extends BaseController implements IAuthController {
 				path: '/auth/reset-password',
 				method: 'post',
 				func: this.resetPassword,
-				middlewares: [new ValidateMiddleware(ResetPasswordDto)],
+				middlewares: [new ValidateMiddleware(ResetPasswordDto), new AuthMethodGuard(this.userService, this.tokenService)],
 			},
 
 			{
 				path: '/auth/new-password/:token',
 				method: 'post',
 				func: this.newPassword,
-				middlewares: [new ValidateMiddleware(NewPasswordDto)],
+				middlewares: [new ValidateMiddleware(NewPasswordDto), new ValidateMiddleware(TokenDto), new AuthMethodGuard(this.userService, this.tokenService)],
 			},
 			{
 				path: '/auth/update-email',
 				method: 'post',
 				func: this.emailUpdate,
-				middlewares: [new AuthGuard(), new ValidateMiddleware(ResetPasswordDto)],
+				middlewares: [new AuthGuard(), new ValidateMiddleware(ResetPasswordDto), new AuthMethodGuard(this.userService, this.tokenService)],
 			},
 			{
 				path: '/auth/update-password',
 				method: 'patch',
 				func: this.passwordUpdate,
-				middlewares: [new AuthGuard(), new ValidateMiddleware(UpdatePasswordDto)],
+				middlewares: [new AuthGuard(), new ValidateMiddleware(UpdatePasswordDto), new AuthMethodGuard(this.userService, this.tokenService)],
 			},
 
 			{
@@ -80,28 +86,37 @@ export class AuthController extends BaseController implements IAuthController {
 		]);
 	}
 
-	public async register({ body, t }: Request, res: Response, next: NextFunction): Promise<void> {
-		const data = await this.authService.register(body, t);
+	public async register(
+		{ body, t, i18n }: Request,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {
+		const data = await this.authService.register(body, t, i18n.language);
 		res.status(201).json(data);
 	}
 
 	public async login(
-		{ body, t, session }: Request,
+		{ body, t, session, i18n }: Request,
 		res: Response,
 		next: NextFunction,
 	): Promise<void> {
-		const user = await this.authService.login(body, session, t);
+		const user = await this.authService.login(body, session, t, i18n.language);
 		res.status(200).json(user);
 	}
 
 	public async logout({ session }: Request, res: Response, next: NextFunction): Promise<void> {
 		await this.sessionService.deleteSession(session);
-		res.clearCookie(this.dotenvConfig.get('SESSION_NAME'));
+		res.clearCookie(this.dotenvConfig.get('SESSION_NAME'), {
+			httpOnly: true,
+			secure: true,
+			sameSite: 'lax',
+			path: '/',
+		});
 		res.status(204).end();
 	}
 
-	public async resetPassword({ body, t }: Request, res: Response, next: NextFunction) {
-		const result = await this.authService.resetPassword(body, t);
+	public async resetPassword({ body, t, i18n }: Request, res: Response, next: NextFunction) {
+		const result = await this.authService.resetPassword(body, t, i18n.language);
 		res.status(200).json(result);
 	}
 
@@ -115,16 +130,22 @@ export class AuthController extends BaseController implements IAuthController {
 			req.body.email,
 			req.user!,
 			req.t,
+			req.i18n.language,
 			req.body?.code,
 		);
 		res.status(200).json(data);
 	}
 
-	public async passwordUpdate({ body, session, t }: Request, res: Response, next: NextFunction) {
+	public async passwordUpdate(
+		{ body, session, t, i18n }: Request,
+		res: Response,
+		next: NextFunction,
+	) {
 		const data = await this.authService.passwordUpdate(
 			body.oldPassword,
 			body.password,
 			t,
+			i18n.language,
 			session.userId!,
 			body?.code,
 		);
@@ -132,15 +153,20 @@ export class AuthController extends BaseController implements IAuthController {
 	}
 
 	public async deleteProfile(
-		{session, user, body, t }: Request,
+		{ session, user, body, t }: Request,
 		res: Response,
 		next: NextFunction,
-	): Promise<void> {		
+	): Promise<void> {
 		const data = await this.authService.deleteProfile(user!.id, t, body.code);
 
-		if(!data.needCode) {
-			await this.sessionService.deleteSession(session)
-			res.clearCookie(this.dotenvConfig.get('SESSION_NAME'))	
+		if (!data.needCode) {
+			await this.sessionService.deleteSession(session);
+			res.clearCookie(this.dotenvConfig.get('SESSION_NAME'), {
+				httpOnly: true,
+				secure: true,
+				sameSite: 'lax',
+				path: '/',
+			});
 		}
 
 		res.status(200).json(data);

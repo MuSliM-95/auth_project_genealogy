@@ -25,7 +25,7 @@ export class TokenRepository implements ITokenRepository {
 		});
 	}
 
-	public async deleteToken(id: number, type: TokenTypes): Promise<number> {
+	public async deleteTokenById(id: number, type: TokenTypes): Promise<number> {
 		return this.sequelizeService.modelsAll.Token.destroy({
 			where: {
 				id,
@@ -41,6 +41,14 @@ export class TokenRepository implements ITokenRepository {
 		   userId,
 		   expiresIn,
 		   type,
+		})
+	}
+
+	public async deleteToken(token: string): Promise<number> {
+		return this.sequelizeService.modelsAll.Token.destroy({
+			where: {
+				token
+			}
 		})
 	}
 }

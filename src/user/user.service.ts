@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { IUserRepository } from './interfaces/user.repository.interface';
 import { HTTPError } from '../errors/http.error.class';
-import { User } from './model/user.model';
+import { AuthMethod, User } from './model/user.model';
 import { AuthData } from '../auth/auth.entity';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { TFunction } from 'i18next';
@@ -28,6 +28,10 @@ export class UserService implements IUserService {
 		return user;
 	}
 
+	public async getUser(id: number, t: TFunction): Promise<User | null> {
+		return await this.userRepository.findUserById(id);
+	}
+
 	public async getUserByEmailWithPassword(id: number, t: TFunction): Promise<User> {
 		const user = await this.userRepository.findUserByIdWithPassword(id);
 
@@ -50,8 +54,12 @@ export class UserService implements IUserService {
 		return this.userRepository.updatePassword(id, passwordHash);
 	}
 
-	public async updateProfile(id: number, data: UpdateUserDto, t: TFunction): Promise<User> {
-		return this.userRepository.updateProfile(id, data, t);
+	public async updateProfile(user: User, data: UpdateUserDto, t: TFunction): Promise<User> {
+		if(user.method !== AuthMethod.credentials && data.isTwoFactorEnabled) {
+			throw new HTTPError(403, t('invalidActionForEmail'), 'updateProfile');
+		}
+
+		return this.userRepository.updateProfile(user.id, data, t);
 	}
 
 	public async emailUpdate(email: string, userId: number): Promise<number> {

@@ -26,4 +26,7 @@ export const TYPES = {
 	UserRepository: Symbol.for('UserRepository'),
 	UserController: Symbol.for('UserController'),
 	I18nConfig: Symbol.for('I18nConfig'),
+	TreeService: Symbol.for('TreeService'),
+	TreeRepository: Symbol.for('TreeRepository'),
+	TreeController: Symbol.for('TreeController')
 };

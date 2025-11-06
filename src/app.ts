@@ -1,4 +1,4 @@
-import express, { Express, NextFunction, Request, Response } from 'express';
+import express, { Express } from 'express';
 import helmet from 'helmet';
 import { Server } from 'http';
 import cors from 'cors';
@@ -18,10 +18,10 @@ import { RedisConfig } from './configs/redis.config';
 import { AuthMiddleware } from './auth/auth.middleware';
 import { IUserService } from './user/interfaces/user.service.interface';
 import { OAuthController } from './oauth/oauth.controller';
-import { IConfirmationController } from './confirmation/interfaces/confirmation.controller.interface';
 import { ConfirmationController } from './confirmation/confirmation.controller';
 import i18nextMiddleware from 'i18next-http-middleware';
 import { I18nConfig } from './configs/i18n.config';
+import { TreeController } from './tree/tree.controller';
 
 
 @injectable()
@@ -36,6 +36,7 @@ export class App {
 		@inject(TYPES.UserController) private userController: UserController,
 		@inject(TYPES.UserService) private userService: IUserService,
 		@inject(TYPES.AuthController) private authController: AuthController,
+		@inject(TYPES.TreeController) private treeController: TreeController,
 		@inject(TYPES.OAuthController) private oauthController: OAuthController,
 		@inject(TYPES.ConfirmationController) private confirmationController: ConfirmationController,
 		@inject(TYPES.SessionConfig) private sessionConfig: SessionConfig,
@@ -57,6 +58,7 @@ export class App {
 		this.app.use('/api', this.userController.router);
 		this.app.use('/api', this.oauthController.router);
 		this.app.use('/api', this.confirmationController.router);
+		this.app.use('/api', this.treeController.router);
 	}
 
 	public useMiddleware(): void {
@@ -65,7 +67,7 @@ export class App {
 		this.app.use(cors(this.corsConfig.config));
 		this.app.use(session(this.sessionConfig));
 		this.app.use(i18nextMiddleware.handle(this.I18nConfig.i18n))
-		const authMiddleware = new AuthMiddleware(this.userService);
+		const authMiddleware = new AuthMiddleware(this.userService, this.dotenvConfig);
 		this.app.use(authMiddleware.execute.bind(authMiddleware));
 		this.app.use(helmet({ crossOriginResourcePolicy: false }));
 	}

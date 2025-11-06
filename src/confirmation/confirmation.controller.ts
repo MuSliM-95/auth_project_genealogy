@@ -7,7 +7,6 @@ import { ILogger } from '../logger/logger.interface';
 import { IConfirmationService } from './interfaces/confirmation.service.interface';
 import { ConfirmationDto } from './dto/confirmation.dto';
 import { ValidateMiddleware } from '../common/validate.middleware';
-import { AuthGuard } from '../auth/guards/auth.guard';
 
 @injectable()
 export class ConfirmationController extends BaseController implements IConfirmationController {

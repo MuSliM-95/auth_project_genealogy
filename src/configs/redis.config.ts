@@ -24,7 +24,6 @@ export class RedisConfig {
 	}
 
 	public async redisClose(): Promise<void> {
-		// await this._config.flushall();
 		await this._config.quit();
 	}
 }

@@ -34,6 +34,7 @@ export class AuthService implements IAuthService {
 	public async register(
 		{ name, email, password }: RegisterDto,
 		t: TFunction,
+		lang: string,
 	): Promise<{ message: string }> {
 		const isExists = await this.userService.getUserEmail(email);
 
@@ -47,7 +48,13 @@ export class AuthService implements IAuthService {
 
 		const user = await this.userService.createUser(userData);
 
-		await this.confirmationService.sendVerificationToken(user.email, user.id, 'auth/new-verification', t);
+		await this.confirmationService.sendVerificationToken(
+			user.email,
+			user.id,
+			'auth/new-verification',
+			t,
+			lang,
+		);
 
 		return {
 			message: t('registrationSuccess'),
@@ -58,6 +65,7 @@ export class AuthService implements IAuthService {
 		dto: LoginDto,
 		session: Request['session'],
 		t: TFunction,
+		lang: string,
 	): Promise<{ user: UserType } | { message: string }> {
 		const user = await this.userService.getUserEmail(dto.email);
 
@@ -81,7 +89,13 @@ export class AuthService implements IAuthService {
 		}
 
 		if (!user.isVerified) {
-			await this.confirmationService.sendVerificationToken(user.email, user.id, 'auth/new-verification', t);
+			await this.confirmationService.sendVerificationToken(
+				user.email,
+				user.id,
+				'auth/new-verification',
+				t,
+				lang,
+			);
 			throw new HTTPError(401, t('emailNotVerified'));
 		}
 
@@ -102,7 +116,7 @@ export class AuthService implements IAuthService {
 		return this.sessionService.saveSession(session, rest);
 	}
 
-	public async resetPassword(dto: ResetPasswordDto, t: TFunction): Promise<boolean> {
+	public async resetPassword(dto: ResetPasswordDto, t: TFunction, lang: string): Promise<boolean> {
 		const existingUser = await this.userService.getUserEmail(dto.email);
 
 		if (!existingUser) {
@@ -111,7 +125,7 @@ export class AuthService implements IAuthService {
 
 		const passwordResetToken = await this.generatePasswordResetToken(dto.email, existingUser.id);
 
-		await this.mailService.sendPasswordResetEmail(dto.email, passwordResetToken.token, t);
+		await this.mailService.sendPasswordResetEmail(dto.email, passwordResetToken.token, t, lang);
 
 		return true;
 	}
@@ -123,7 +137,7 @@ export class AuthService implements IAuthService {
 		const existingToken = await this.tokenService.findToken(email, TokenTypes.password_reset);
 
 		if (existingToken) {
-			await this.tokenService.deleteToken(existingToken.id, TokenTypes.password_reset);
+			await this.tokenService.deleteTokenById(existingToken.id, TokenTypes.password_reset);
 		}
 
 		const passwordResetToken = await this.tokenService.createToken(
@@ -164,7 +178,7 @@ export class AuthService implements IAuthService {
 
 		await this.userService.userPasswordUpdate(existingUser.id, passwordHash);
 
-		await this.tokenService.deleteToken(existingToken.id, TokenTypes.password_reset);
+		await this.tokenService.deleteTokenById(existingToken.id, TokenTypes.password_reset);
 
 		return true;
 	}
@@ -177,7 +191,7 @@ export class AuthService implements IAuthService {
 		const existingToken = await this.tokenService.findToken(email, tokenType);
 
 		if (existingToken) {
-			await this.tokenService.deleteToken(existingToken.id, tokenType);
+			await this.tokenService.deleteTokenById(existingToken.id, tokenType);
 		}
 
 		const newToken = await this.tokenService.createToken(email, code, userId, expiresIn, tokenType);
@@ -207,13 +221,13 @@ export class AuthService implements IAuthService {
 			throw new HTTPError(400, t('twoFactorTokenExpired'));
 		}
 
-		await this.tokenService.deleteToken(existingToken.id, tokenType);
+		await this.tokenService.deleteTokenById(existingToken.id, tokenType);
 
 		return true;
 	}
 
 	public async sendTwoFactorToken(email: string, userId: number, t: TFunction) {
-		const twoFactorToken = await this.generateCode(email, userId,  TokenTypes.two_factor);
+		const twoFactorToken = await this.generateCode(email, userId, TokenTypes.two_factor);
 		await this.mailService.sendTwoFactorTokenEmail(twoFactorToken.email, twoFactorToken.token, t);
 		return true;
 	}
@@ -222,6 +236,7 @@ export class AuthService implements IAuthService {
 		email: string,
 		user: User,
 		t: TFunction,
+		lang: string,
 		code?: string,
 	): Promise<{ message: string } | { messageTwo: string }> {
 		const existsEmail = await this.userService.getUserEmail(email);
@@ -241,11 +256,7 @@ export class AuthService implements IAuthService {
 			throw new HTTPError(409, t('emailAlreadyInUse'));
 		}
 
-		if (user?.method !== AuthMethod.credentials) {
-			throw new HTTPError(403, t('invalidAction'), 'emailUpdate');
-		}
-
-		await this.confirmationService.sendVerificationToken(email, user.id, 'auth/new-email', t);
+		await this.confirmationService.sendVerificationToken(email, user.id, 'auth/new-email', t, lang);
 
 		return { message: t('checkEmailForConfirmation') };
 	}
@@ -254,6 +265,7 @@ export class AuthService implements IAuthService {
 		oldPassword: string,
 		newPassword: string,
 		t: TFunction,
+		lang: string,
 		userId: number,
 		code?: string,
 	) {
@@ -284,7 +296,7 @@ export class AuthService implements IAuthService {
 			throw new HTTPError(500, t('passwordUpdateFailed'));
 		}
 
-		await this.mailService.sendPasswordUpdateEmail(user.email, t);
+		await this.mailService.sendPasswordUpdateEmail(user.email, t, lang);
 
 		return {
 			message: t('passwordChanged'),
@@ -317,4 +329,5 @@ export class AuthService implements IAuthService {
 			needCode: false,
 		};
 	}
+
 }

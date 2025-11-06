@@ -10,6 +10,8 @@ import { IDotenvConfig } from '../configs/dotenv.config.interface';
 import { ProviderGuard } from './guards/oauth.guard';
 import { ValidateMiddleware } from '../common/validate.middleware';
 import { TokenDto } from './dto/token.dto';
+import { CodeDto } from './dto/code.dto';
+import { ProviderDto } from './dto/provider.dto';
 
 @injectable()
 export class OAuthController extends BaseController {
@@ -25,13 +27,13 @@ export class OAuthController extends BaseController {
 				path: '/oauth/callback/:provider',
 				method: 'get',
 				func: this.callback,
-				middlewares: [new ProviderGuard(providerService)],
+				middlewares: [new ProviderGuard(providerService), new ValidateMiddleware(ProviderDto, 'params'), new ValidateMiddleware(CodeDto, 'query')],
 			},
 			{
 				path: '/oauth/connect/:provider',
 				method: 'get',
 				func: this.connect,
-				middlewares: [new ProviderGuard(providerService)],
+				middlewares: [new ProviderGuard(providerService), new ValidateMiddleware(ProviderDto, 'params')],
 			},
 			{
 				path: '/oauth/exists-info',
@@ -49,13 +51,8 @@ export class OAuthController extends BaseController {
 
 	public async callback(req: Request, res: Response, next: NextFunction) {
 		const { session, params, query, t } = req;
-		if (!query.code || typeof query.code !== 'string') {
-			
-			throw new HTTPError(400, 'Не был предоставлен код авторизации', 'callback');
-		}
-
 		try {
-			await this.oauthService.extractProfileFromCode(session, params.provider, query?.code, t);
+			await this.oauthService.extractProfileFromCode(session, params.provider, query.code as string, t);
 
 			res.redirect(`${this.dotenvConfig.get('CLIENT_URL_NAME')}/dashboard/settings`);
 		} catch (error) {
@@ -69,7 +66,7 @@ export class OAuthController extends BaseController {
 		}
 	}
 
-	public async getExistsInfo({ query }: Request, res: Response, next: NextFunction) {
+	public async getExistsInfo({ query }: Request, res: Response, next: NextFunction) {	
 		const email = await this.oauthService.getOauthEmail(query.token?.toString()!);
 		if (!email) {
 			return res.status(404).json({ message: 'Email not found' });

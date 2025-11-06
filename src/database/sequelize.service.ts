@@ -35,7 +35,7 @@ export class SequelizeService implements ISequelizeService {
 	public async connect(): Promise<void> {
 		try {
 			await this.sequelize.authenticate();
-			await this.sequelize.sync({force: true});
+			await this.sequelize.sync();
 			this.logger.log('[SequelizeService]. Успешно подключились к базе данных');
 		} catch (error) {
 			if (error instanceof Error) {

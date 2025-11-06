@@ -24,6 +24,7 @@ import { confirmationBindings } from './confirmation/confirmation.main';
 import { MailService } from './common/mail/mail.service';
 import { tokenBindings } from './token/token.main';
 import { I18nConfig } from './configs/i18n.config';
+import { treeBindings } from './tree/container';
 
 export interface IBootstrapReturn {
 	app: App;
@@ -49,7 +50,7 @@ const appBindings = new ContainerModule((options: ContainerModuleLoadOptions) =>
 async function bootstrap(): Promise<IBootstrapReturn> {
 	const appContainer = new Container();
 
-	appContainer.load(appBindings, authBindings, userBinding, oauthBindings, confirmationBindings, tokenBindings);
+	appContainer.load(appBindings, authBindings, userBinding, oauthBindings, confirmationBindings, tokenBindings, treeBindings);
 
 	const app = appContainer.get<App>(TYPES.Application);
 

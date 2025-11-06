@@ -80,7 +80,7 @@ const tokenServiceMock: ITokenService = {
 	findToken: jest.fn(),
 	findTokenUnique: jest.fn(),
 	createToken: jest.fn(),
-	deleteToken: jest.fn(),
+	deleteTokenById: jest.fn(),
 }
 
 const redisConfigMock = {

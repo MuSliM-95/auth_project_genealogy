@@ -8,12 +8,12 @@ import * as React from 'react';
 import { TFunction } from 'i18next';
 
 interface ResetPasswordTemplateProps {
-	domain: string;
 	t: TFunction;
+	resetLink: string
 }
 
-export function UpdatePasswordTemplate({ domain, t }: ResetPasswordTemplateProps) {
-	const resetLink = `${domain}/auth/reset-password`;
+export function UpdatePasswordTemplate({ t, resetLink }: ResetPasswordTemplateProps) {
+	
 
 	return (
 		<Tailwind>
