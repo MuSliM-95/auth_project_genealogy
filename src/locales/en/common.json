@@ -60,5 +60,7 @@
 	"treeLinkExpired": "The link to access the tree has expired.",
 
 
-	"invalidActionForEmail": "This action is not allowed for this email."
+	"invalidActionForEmail": "This action is not allowed for this email.",
+
+	"auth-success": "Login successful"
 }

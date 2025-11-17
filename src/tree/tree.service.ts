@@ -32,7 +32,7 @@ export class TreeService implements ITreeService {
         
         const newToken = await this.tokenService.createToken(user.email, token, user.id, expiresIn, TokenTypes.tree_link)
 		await this.treeRepository.create(tree, newToken.token)
-
+		
 		return {
 			link: `${this.dotenvConfig.get('CLIENT_URL_NAME')}/${lang}/tree/link/${newToken.token}`
 		}

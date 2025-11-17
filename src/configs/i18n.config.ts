@@ -27,7 +27,7 @@ export class I18nConfig {
 				},
 
 				detection: {
-					order: ['cookie', 'navigator', 'header'],
+					order: ['cookie', 'navigator', 'header', 'query'],
 					lookupQuerystring: 'lang',
 					lookupHeader: 'accept-language',
 					lookupCookie: 'NEXT_LOCALE',

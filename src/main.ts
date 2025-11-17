@@ -16,7 +16,6 @@ import { SessionConfig } from './configs/session.config';
 import { CorsConfig } from './configs/cors.config';
 import { authBindings } from './auth/auth.main';
 import { userBinding } from './user/user.main';
-import { RecaptchaConfig } from './configs/recaptcha.config';
 import { DotenvConfig } from './configs/dotenv.config';
 import { oauthBindings } from './oauth/oauth.main';
 import { MailConfig } from './configs/mail.config';
@@ -39,7 +38,6 @@ const appBindings = new ContainerModule((options: ContainerModuleLoadOptions) =>
 	options.bind<ISessionService>(TYPES.SessionService).to(SessionService).inSingletonScope();
 	options.bind<RedisConfig>(TYPES.RedisConfig).to(RedisConfig).inSingletonScope();
 	options.bind<I18nConfig>(TYPES.I18nConfig).to(I18nConfig).inSingletonScope();
-	options.bind<RecaptchaConfig>(TYPES.RecaptchaConfig).to(RecaptchaConfig).inSingletonScope()
 	options.bind<CorsConfig>(TYPES.CorsConfig).to(CorsConfig);
 	options.bind<MailConfig>(TYPES.MailConfig).to(MailConfig).inSingletonScope();
 	options.bind<MailService>(TYPES.MailService).to(MailService);

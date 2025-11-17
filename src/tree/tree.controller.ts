@@ -8,7 +8,8 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { ValidateMiddleware } from '../common/validate.middleware';
 import { TokenDto } from './dto/token.dto';
-import { CreateTreeLinkDto, TreeDto } from './dto/tree.node.dto';
+import { TreeDto } from './dto/tree.node.dto';
+import { LangGuard } from '../auth/guards/lang.guard';
 
 @injectable()
 export class TreeController extends BaseController implements ITreeController {
@@ -22,7 +23,7 @@ export class TreeController extends BaseController implements ITreeController {
 				path: '/tree/create-link',
 				method: 'post',
 				func: this.createLink,
-				middlewares: [new AuthGuard(), new ValidateMiddleware(TreeDto)],
+				middlewares: [new AuthGuard(), new ValidateMiddleware(TreeDto), new LangGuard()],
 			},
 			{
 				path: '/tree/link/:token',
@@ -34,7 +35,8 @@ export class TreeController extends BaseController implements ITreeController {
 	}
 
 	public async createLink(req: Request, res: Response, next: NextFunction): Promise<void> {
-		const treeLink = await this.treeService.createLink(req.body, req.user!, req.i18n.language);
+		const lang = req.lang
+		const treeLink = await this.treeService.createLink(req.body, req.user!, lang);
 		res.status(200).json(treeLink);
 	}
 

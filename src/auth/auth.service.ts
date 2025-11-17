@@ -66,7 +66,7 @@ export class AuthService implements IAuthService {
 		session: Request['session'],
 		t: TFunction,
 		lang: string,
-	): Promise<{ user: UserType } | { message: string }> {
+	): Promise<{ message: string } | {messageTwo: string}> {
 		const user = await this.userService.getUserEmail(dto.email);
 
 		if (!user || !user.password) {
@@ -104,7 +104,7 @@ export class AuthService implements IAuthService {
 				await this.sendTwoFactorToken(user.email, user.id, t);
 
 				return {
-					message: t('twoFactorRequired'),
+					messageTwo: t('twoFactorRequired'),
 				};
 			}
 
@@ -113,7 +113,11 @@ export class AuthService implements IAuthService {
 
 		const { password, ...rest } = user;
 
-		return this.sessionService.saveSession(session, rest);
+		 this.sessionService.saveSession(session, rest);
+
+		 return {
+			message: t('auth-success')
+		 }
 	}
 
 	public async resetPassword(dto: ResetPasswordDto, t: TFunction, lang: string): Promise<boolean> {

@@ -15,7 +15,8 @@ export class OAuthEntity {
 		};
 	}
 
-	public getAuthUrl() {
+	public getAuthUrl(lang: string) {
+		const state = JSON.stringify({ lang });
 		const query = new URLSearchParams({
 			response_type: 'code',
 			client_id: this.options.client_id,
@@ -23,22 +24,22 @@ export class OAuthEntity {
 			scope: (this.options.scopes ?? []).join(' '),
 			access_type: 'offline',
 			prompt: 'select_account',
+			state: state
 		});
 
 		return `${this.options.authorize_url}?${query}`;
 	}
 
-	public async findUserByCode(code: string, t: TFunction): Promise<TypeUserInfo> {
+	public async findUserByCode(code: string, t: TFunction, lang: string): Promise<TypeUserInfo> {
 		const client_id = this.options.client_id;
 		const client_secret = this.options.client_secret;		
-
 
 		const tokenQuery = new URLSearchParams({
 			client_id,
 			client_secret,
 			code,
 			redirect_uri: this.getRedirectUrl(),
-			grant_type: 'authorization_code',
+			grant_type: 'authorization_code'
 		});
 
 		const tokensRequest = await fetch(this.options.access_url, {
@@ -50,7 +51,6 @@ export class OAuthEntity {
 			},
 		});
 
-		
 		
 		if (!tokensRequest.ok) {
 			throw new HTTPError(

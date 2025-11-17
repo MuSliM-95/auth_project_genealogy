@@ -13,6 +13,8 @@ import { ITokenService } from '../token/interfaces/token.service.interface';
 import { ITokenRepository } from '../token/interfaces/token.repository.interface';
 import { TokenRepository } from '../token/token.repository';
 import { RedisConfig } from '../configs/redis.config';
+import { TFunction } from 'i18next';
+import { HTTPError } from '../errors/http.error.class';
 
 
 const container = new Container();
@@ -67,6 +69,8 @@ const userRepositoryMock: IUserRepository = {
 	updatePassword: jest.fn(),
 	updateProfile: jest.fn(),
 	emailUpdate: jest.fn(),
+	findUserByIdWithPassword: jest.fn(),
+	delete: jest.fn(),
 
 };
 
@@ -76,11 +80,12 @@ const sessionServiceMock: ISessionService = {
 };
 
 const tokenServiceMock: ITokenService = {
-	generateOneTimeToken: jest.fn(),
 	findToken: jest.fn(),
 	findTokenUnique: jest.fn(),
-	createToken: jest.fn(),
 	deleteTokenById: jest.fn(),
+	createToken: jest.fn(),
+	generateOneTimeToken: jest.fn(),
+	deleteToken: jest.fn(),
 }
 
 const redisConfigMock = {
@@ -91,11 +96,14 @@ const redisConfigMock = {
 const mockUserService = {
 	createUser: jest.fn(),
 	getUserById: jest.fn(),
+	getUser: jest.fn(),
+	getUserByEmailWithPassword: jest.fn(),
 	getUserEmail: jest.fn(),
 	userUpdateIsVerified: jest.fn(),
 	userPasswordUpdate: jest.fn(),
 	updateProfile: jest.fn(),
 	emailUpdate: jest.fn(),
+	deleteUser: jest.fn(),
 };
 
 const mockSession = {} as Request['session'];
@@ -126,37 +134,56 @@ beforeAll(() => {
 });
 
 describe('oauth service', () => {
-	it('extractProfileFromCode create new user success', async () => {
+	const  t = ((key: string) => key) as unknown as TFunction;;
+	const lang = 'ru'
 
-		userService.getUserById = jest.fn().mockResolvedValue(null);
+	it('extractProfileFromCode connect success', async () => {
+		oauthRepository.findAccountById = jest.fn().mockResolvedValue({ userId: 1 });
 
-
-		userService.createUser = jest.fn().mockResolvedValue(result);
-
-		oauthRepository.findAccountById = jest.fn().mockResolvedValue(null)
-
-		oauthRepository.createAccount = jest.fn().mockResolvedValue({})
+		userService.getUserById = jest.fn().mockResolvedValue(result);
 
 		sessionService.saveSession = jest.fn().mockResolvedValue({ user: result });
-		
-		const connect = await oauthService.extractProfileFromCode(mockSession, 'google', 'oauth_code');
 
-		expect(userService.createUser).toHaveBeenCalled()
-		expect(oauthRepository.createAccount).toHaveBeenCalled()
+		const connect = await oauthService.extractProfileFromCode(mockSession, 'google', 'oauth_code', t, lang);
+		
+		expect(mockProviderInstance.findUserByCode).toHaveBeenCalledWith('oauth_code', t);
+		expect(oauthRepository.findAccountById).toHaveBeenCalledWith(mockProfile.id, mockProfile.provider);
+		expect(userService.getUserById).toHaveBeenCalledWith(1, t);
 		expect(connect.user).toEqual(result);
 	});
 
-	it('extractProfileFromCode connect success', async () => {
-	
-		oauthRepository.findAccountById = jest.fn().mockResolvedValue({userId: 1});
 
-		userService.getUserById = jest.fn().mockResolvedValue(result);
-        tokenService.generateOneTimeToken = jest.fn().mockResolvedValue('token')
-		const connect = await oauthService.extractProfileFromCode(mockSession, 'google', 'oauth_code');
+	it('extractProfileFromCode email conflict → throws 422', async () => {
+		oauthRepository.findAccountById = jest.fn().mockResolvedValue(null);
 
+		userService.getUserById = jest.fn(),
+		userService.getUserEmail = jest.fn().mockResolvedValue(result);
+
+		tokenService.generateOneTimeToken = jest.fn().mockResolvedValue('temp_token');
+
+		await expect(
+			oauthService.extractProfileFromCode(mockSession, 'google', 'oauth_code', t, lang)
+		).rejects.toThrow(HTTPError);
+
+		expect(tokenService.generateOneTimeToken).toHaveBeenCalledWith(expect.any(String), result.email);
+	});
+
+	it('extractProfileFromCode create new user success', async () => {
+		oauthRepository.findAccountById = jest.fn().mockResolvedValue(null),
+		oauthRepository.createAccount = jest.fn().mockResolvedValue({});
+
+		userService.getUserById = jest.fn().mockResolvedValue(null)
+		userService.getUserEmail = jest.fn().mockResolvedValue(null),
+		userService.createUser = jest.fn().mockResolvedValue(result);
+
+		sessionService.saveSession = jest.fn().mockResolvedValue({ user: result });
+
+		const connect = await oauthService.extractProfileFromCode(mockSession, 'google', 'oauth_code', t, lang);
+
+		expect(mockProviderInstance.findUserByCode).toHaveBeenCalledWith('oauth_code', t);
+		expect(userService.createUser).toHaveBeenCalled();
+		expect(oauthRepository.createAccount).toHaveBeenCalled();
 		expect(connect.user).toEqual(result);
-		expect(mockProviderInstance.findUserByCode).toHaveBeenCalledWith('oauth_code')
-		expect(oauthRepository.findAccountById).toHaveBeenCalledWith(mockProfile.id, mockProfile.provider)
 	});
 
 });

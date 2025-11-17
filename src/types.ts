@@ -2,7 +2,6 @@ export const TYPES = {
 	Application: Symbol.for('App'),
 	ILogger: Symbol.for('ILogger'),
 	SequelizeService: Symbol.for('SequelizeService'),
-	RecaptchaConfig: Symbol.for('RecaptchaConfig'),
 	ExceptionFilter: Symbol.for('ExceptionFilter'),
 	CorsConfig: Symbol.for('CorsConfig'),
 	RedisConfig: Symbol.for('RedisConfig'),

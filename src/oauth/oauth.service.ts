@@ -7,7 +7,7 @@ import { IUserService } from '../user/interfaces/user.service.interface';
 import { ISessionService } from '../common/session.service.interface';
 import { Request } from 'express';
 import { AuthData } from '../auth/auth.entity';
-import { AuthMethod, User } from '../user/model/user.model';
+import { AuthMethod } from '../user/model/user.model';
 import { HTTPError } from '../errors/http.error.class';
 import { v4 as uuidv4 } from 'uuid';
 import { ITokenService } from '../token/interfaces/token.service.interface';
@@ -29,11 +29,12 @@ export class OAuthService implements IOAuthService {
 		session: Request['session'],
 		provider: string,
 		code: string,
-		t : TFunction
+		t : TFunction,
+		lang: string
 	): Promise<{ user: UserType }> {
 		const providerInstance = this.providerService.findByService(provider);
 
-		const profile = await providerInstance?.findUserByCode(code, t)!;
+		const profile = await providerInstance?.findUserByCode(code, t, lang)!;
 
 		const account = await this.oauthRepository.findAccountById(profile?.id, profile?.provider);
 
@@ -77,9 +78,9 @@ export class OAuthService implements IOAuthService {
 	public async getOauthEmail(token: string): Promise<string | null> {
 		const key = `oauth:token:${token}`;
 		const email = await this.redisConfig.config.get(key);
-
+    
 		if (!email) {
-			return null;
+			throw new HTTPError(404, 'Email not found')
 		}
 		return email;
 	}

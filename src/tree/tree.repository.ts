@@ -9,14 +9,17 @@ export class TreeRepository implements ITreeRepository {
 	constructor(@inject(TYPES.RedisConfig) public readonly redisConfig: RedisConfig) {}
 
 	public async create(tree: TreeTypes, token: string): Promise<string> {
-		return this.redisConfig.config.set(token, JSON.stringify(tree), 'EX', 24 * 60 * 60 );
+		const key = `tree:${token}`;
+		return this.redisConfig.config.set(key, JSON.stringify(tree), 'EX', 24 * 60 * 60);
 	}
 
 	public async findTree(token: string): Promise<string | null> {
-		return this.redisConfig.config.get(token);
+		const key = `tree:${token}`;
+		return this.redisConfig.config.get(key);
 	}
 
 	public async delete(token: string): Promise<number> {
-		return this.redisConfig.config.del(token);
+		const key = `tree:${token}`;
+		return this.redisConfig.config.del(key);
 	}
 }

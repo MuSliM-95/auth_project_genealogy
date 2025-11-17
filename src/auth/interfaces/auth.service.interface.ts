@@ -18,7 +18,7 @@ export interface IAuthService {
 		session: Request['session'],
 		t: TFunction,
 		lang: string
-	) => Promise<{ user: UserType } | { message: string }>;
+	) => Promise<{ message: string } | {messageTwo: string}>;
 
 	resetPassword: (dto: ResetPasswordDto, t: TFunction, lang: string) => Promise<boolean>;
 

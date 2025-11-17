@@ -41,7 +41,7 @@ export class ConfirmationController extends BaseController implements IConfirmat
 	}
 
 	public async newEmailVerification(
-		{ session, body, t }: Request<{}, {}, ConfirmationDto>,
+		{ body, t }: Request<{}, {}, ConfirmationDto>,
 		res: Response,
 		next: NextFunction,
 	) {

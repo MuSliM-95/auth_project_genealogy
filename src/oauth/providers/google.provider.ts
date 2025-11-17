@@ -21,6 +21,7 @@ export class GoogleProvider extends OAuthEntity {
 			email: data.email,
 			name: data.name,
 			picture: data.picture,
+			locale: data.locale
 		});
 	}
 }
